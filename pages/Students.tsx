@@ -479,12 +479,12 @@ const AdminStudents = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input type="text" name="firstName" required className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.firstName} onChange={handleInputChange} disabled={isSubmitting} />
+                      <input type="text" name="firstName" required placeholder="e.g. John" className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.firstName} onChange={handleInputChange} disabled={isSubmitting} />
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
-                    <input type="text" name="lastName" required className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.lastName} onChange={handleInputChange} disabled={isSubmitting} />
+                    <input type="text" name="lastName" required placeholder="e.g. Doe" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.lastName} onChange={handleInputChange} disabled={isSubmitting} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -492,14 +492,14 @@ const AdminStudents = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input type="email" name="email" required className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.email} onChange={handleInputChange} disabled={isSubmitting} />
+                      <input type="email" name="email" required placeholder="e.g. john@school.com" className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.email} onChange={handleInputChange} disabled={isSubmitting} />
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent Contact</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input type="tel" name="parentContact" className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.parentContact} onChange={handleInputChange} disabled={isSubmitting} />
+                      <input type="tel" name="parentContact" placeholder="e.g. (555) 123-4567" className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.parentContact} onChange={handleInputChange} disabled={isSubmitting} />
                     </div>
                   </div>
                 </div>
@@ -525,7 +525,7 @@ const AdminStudents = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 text-gray-400" size={16} />
-                    <textarea name="address" rows={2} className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none resize-none" value={formData.address} onChange={handleInputChange} disabled={isSubmitting} />
+                    <textarea name="address" rows={2} placeholder="e.g. 123 Maple St, Springfield" className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none resize-none" value={formData.address} onChange={handleInputChange} disabled={isSubmitting} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
@@ -551,7 +551,7 @@ const AdminStudents = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Roll No.</label>
                     <div className="relative">
                       <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                      <input type="text" name="rollNumber" className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.rollNumber} onChange={handleInputChange} disabled={isSubmitting} />
+                      <input type="text" name="rollNumber" placeholder="e.g. 1001" className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white focus:border-brand-500 outline-none" value={formData.rollNumber} onChange={handleInputChange} disabled={isSubmitting} />
                     </div>
                   </div>
                 </div>
