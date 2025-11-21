@@ -63,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         md:translate-x-0
       `}>
         {/* Header */}
-        <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-700 shrink-0">
+        <div className="p-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-700 shrink-0">
           <div className="flex items-center gap-2">
             <div className="bg-brand-50 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 p-1.5 rounded-lg">
               <School size={24} />
