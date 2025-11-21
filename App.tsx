@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import Teachers from './pages/Teachers';
+import TeacherDetails from './pages/TeacherDetails';
 import Classes from './pages/Classes';
 import Subjects from './pages/Subjects';
 import Exams from './pages/Exams';
@@ -87,6 +88,12 @@ const AppRoutes = () => {
         <Route path="/teachers" element={
           <ProtectedRoute>
             <Teachers />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/teachers/:id" element={
+          <ProtectedRoute>
+            <TeacherDetails />
           </ProtectedRoute>
         } />
 
