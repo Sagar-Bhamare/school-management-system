@@ -1,22 +1,45 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, BookOpen, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
-import { MOCK_TIMETABLE, MOCK_ASSIGNMENTS, MOCK_EXAMS } from '../constants';
+import { MOCK_TIMETABLE, MOCK_ASSIGNMENTS, MOCK_EXAMS, MOCK_STUDENTS } from '../constants';
+import { useAuth } from '../context/AuthContext';
+import { Assignment } from '../types';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Identify current student profile
+  const studentProfile = user?.role === 'student' 
+    ? (MOCK_STUDENTS.find(s => s.email === user.email || s.name === user.name) || MOCK_STUDENTS[0])
+    : null;
+  
+  const studentClass = studentProfile ? `${studentProfile.grade}-${studentProfile.section}` : '';
+
+  // Load assignments from localStorage
+  const [assignments, setAssignments] = useState<Assignment[]>(() => {
+      const saved = localStorage.getItem('edu_assignments');
+      return saved ? JSON.parse(saved) : MOCK_ASSIGNMENTS;
+  });
+
+  // Filter assignments for this student that are pending or active
+  const dueSoonAssignments = assignments
+    .filter(a => a.grade === studentClass && a.status !== 'Completed')
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 3);
 
   const stats = [
     {
       title: 'My Attendance',
-      value: '94%',
+      value: `${studentProfile?.attendance || 92}%`,
       icon: Activity,
       color: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-900/20',
     },
     {
       title: 'Pending Homework',
-      value: '3',
+      value: dueSoonAssignments.length.toString(),
       icon: BookOpen,
       color: 'text-orange-600 dark:text-orange-400',
       bg: 'bg-orange-50 dark:bg-orange-900/20',
@@ -41,7 +64,9 @@ const StudentDashboard = () => {
     <div className="space-y-6 pb-8 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Student Dashboard</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, John! Here's your learning summary.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Welcome back, {user?.name.split(' ')[0]}! Here's your learning summary for Class {studentClass}.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -93,15 +118,19 @@ const StudentDashboard = () => {
                     <button onClick={() => navigate('/assignments')} className="text-xs text-brand-600 dark:text-brand-400 hover:underline">View All</button>
                 </div>
                 <div className="space-y-3">
-                    {MOCK_ASSIGNMENTS.slice(0, 3).map((assign) => (
-                        <div key={assign.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
-                            <div className={`mt-1 w-2 h-2 rounded-full ${assign.status === 'Completed' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{assign.title}</p>
-                                <p className="text-xs text-gray-500">{assign.subject} • Due {assign.dueDate}</p>
+                    {dueSoonAssignments.length > 0 ? (
+                        dueSoonAssignments.map((assign) => (
+                            <div key={assign.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" onClick={() => navigate('/assignments')}>
+                                <div className={`mt-1 w-2 h-2 rounded-full ${assign.status === 'Completed' ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{assign.title}</p>
+                                    <p className="text-xs text-gray-500">{assign.subject} • Due {assign.dueDate}</p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 italic text-center py-4">No pending assignments.</p>
+                    )}
                 </div>
             </div>
 
