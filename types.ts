@@ -97,6 +97,7 @@ export interface Assignment {
   status: 'Pending' | 'Active' | 'Completed';
   submissions: number;
   total: number;
+  description?: string;
 }
 
 export interface AttendanceRecord {

@@ -61,9 +61,39 @@ export const MOCK_TIMETABLE: TimetableItem[] = [
 ];
 
 export const MOCK_ASSIGNMENTS: Assignment[] = [
-  { id: 1, title: 'Physics Lab Report', subject: 'Physics', grade: '10-A', dueDate: '2024-03-25', status: 'Pending', submissions: 12, total: 32 },
-  { id: 2, title: 'History Essay: WW2', subject: 'History', grade: '10-A', dueDate: '2024-03-28', status: 'Active', submissions: 5, total: 32 },
-  { id: 3, title: 'Math Problem Set 5', subject: 'Mathematics', grade: '10-B', dueDate: '2024-03-22', status: 'Completed', submissions: 30, total: 30 },
+  { 
+    id: 1, 
+    title: 'Physics Lab Report', 
+    subject: 'Physics', 
+    grade: '10-A', 
+    dueDate: '2024-03-25', 
+    status: 'Pending', 
+    submissions: 12, 
+    total: 32,
+    description: 'Complete the lab report for the pendulum experiment. Include all data tables and graphs. Ensure your conclusion references the hypothesis.'
+  },
+  { 
+    id: 2, 
+    title: 'History Essay: WW2', 
+    subject: 'History', 
+    grade: '10-A', 
+    dueDate: '2024-03-28', 
+    status: 'Active', 
+    submissions: 5, 
+    total: 32,
+    description: 'Write a 1000-word essay on the causes of World War II. Focus on the political landscape of Europe in the 1930s. Cite at least 3 sources.'
+  },
+  { 
+    id: 3, 
+    title: 'Math Problem Set 5', 
+    subject: 'Mathematics', 
+    grade: '10-B', 
+    dueDate: '2024-03-22', 
+    status: 'Completed', 
+    submissions: 30, 
+    total: 30,
+    description: 'Solve problems 1-20 from Chapter 5. Show all your work for credit. Submit your answers as a PDF.'
+  },
 ];
 
 export const MOCK_NOTIFICATIONS: Notification[] = [

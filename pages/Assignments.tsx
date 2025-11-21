@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Plus, FileText, Calendar, CheckCircle, Clock, MoreVertical, Search, Filter, X, Loader2, Edit2, Trash2, Save, AlertCircle } from 'lucide-react';
+import { Plus, FileText, Calendar, CheckCircle, Clock, MoreVertical, Search, Filter, X, Loader2, Edit2, Trash2, Save, AlertCircle, Eye, Paperclip, User, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_ASSIGNMENTS, MOCK_STUDENTS, MOCK_CLASSES } from '../constants';
 import { Assignment } from '../types';
@@ -36,13 +35,17 @@ const Assignments = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
+  // Details Modal State
+  const [viewAssignment, setViewAssignment] = useState<Assignment | null>(null);
+
   const initialForm = {
     title: '',
     subject: '',
     grade: '',
     dueDate: '',
     status: 'Active' as 'Pending' | 'Active' | 'Completed',
-    total: 30
+    total: 30,
+    description: ''
   };
   const [formData, setFormData] = useState(initialForm);
 
@@ -59,7 +62,7 @@ const Assignments = () => {
     setActiveMenuId(activeMenuId === id ? null : id);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -78,11 +81,17 @@ const Assignments = () => {
       grade: assignment.grade,
       dueDate: assignment.dueDate,
       status: assignment.status,
-      total: assignment.total
+      total: assignment.total,
+      description: assignment.description || ''
     });
     setIsEditing(true);
     setCurrentId(assignment.id);
     setShowModal(true);
+    setActiveMenuId(null);
+  };
+
+  const openViewModal = (assignment: Assignment) => {
+    setViewAssignment(assignment);
     setActiveMenuId(null);
   };
 
@@ -208,6 +217,12 @@ const Assignments = () => {
                               
                               {activeMenuId === assign.id && (
                                   <div className="absolute right-0 top-8 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 z-20 py-1 animate-in fade-in zoom-in-95 duration-200">
+                                      <button 
+                                          onClick={(e) => { e.stopPropagation(); openViewModal(assign); }}
+                                          className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2 transition-colors"
+                                      >
+                                          <Eye size={16} /> View Details
+                                      </button>
                                       <button 
                                           onClick={(e) => { e.stopPropagation(); openEditModal(assign); }}
                                           className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2 transition-colors"
@@ -373,6 +388,19 @@ const Assignments = () => {
                         </select>
                     </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+                  <textarea 
+                    name="description"
+                    rows={4}
+                    placeholder="Enter assignment instructions, requirements, etc."
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-gray-900 dark:text-white outline-none transition-all resize-none"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    disabled={isSubmitting}
+                  />
+                </div>
               </form>
             </div>
 
@@ -404,6 +432,167 @@ const Assignments = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* View Assignment Details Modal */}
+      {viewAssignment && (
+         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start bg-gray-50/50 dark:bg-gray-800 shrink-0">
+                 <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-xl text-gray-900 dark:text-white">{viewAssignment.title}</h3>
+                        <span className={`px-2 py-0.5 text-xs rounded-full font-medium border ${
+                             viewAssignment.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400' : 
+                             viewAssignment.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400' :
+                             'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400'
+                        }`}>
+                          {viewAssignment.status}
+                        </span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{viewAssignment.subject} • {viewAssignment.grade}</p>
+                 </div>
+                 <button 
+                    onClick={() => setViewAssignment(null)} 
+                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all"
+                 >
+                    <X size={20} />
+                 </button>
+              </div>
+
+              <div className="overflow-y-auto p-6 custom-scrollbar space-y-6">
+                  {/* Metadata Row */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                      <div>
+                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Due Date</p>
+                          <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                              <Calendar size={16} className="text-brand-500" /> {viewAssignment.dueDate}
+                          </p>
+                      </div>
+                      <div>
+                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Submissions</p>
+                          <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                              <CheckCircle size={16} className="text-brand-500" /> {viewAssignment.submissions} / {viewAssignment.total}
+                          </p>
+                      </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                          <FileText size={18} className="text-gray-400" /> Description
+                      </h4>
+                      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                          {viewAssignment.description || "No description provided."}
+                      </div>
+                  </div>
+
+                  {/* Attachments (Mock) */}
+                  <div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                          <Paperclip size={18} className="text-gray-400" /> Attached Files
+                      </h4>
+                      <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
+                              <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded">
+                                      <FileText size={16} />
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white">Assignment_Guidelines.pdf</p>
+                                      <p className="text-xs text-gray-500">245 KB</p>
+                                  </div>
+                              </div>
+                              <button className="text-brand-600 dark:text-brand-400 hover:underline text-xs font-medium">Download</button>
+                          </div>
+                          <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
+                               <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded">
+                                      <FileText size={16} />
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white">Reference_Material.docx</p>
+                                      <p className="text-xs text-gray-500">1.2 MB</p>
+                                  </div>
+                              </div>
+                              <button className="text-brand-600 dark:text-brand-400 hover:underline text-xs font-medium">Download</button>
+                          </div>
+                      </div>
+                  </div>
+
+                   {/* Submission List */}
+                   <div>
+                      <div className="flex items-center justify-between mb-2">
+                         <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <User size={18} className="text-gray-400" /> Student Submissions
+                         </h4>
+                         <button className="text-xs text-brand-600 dark:text-brand-400 font-medium flex items-center gap-1">
+                            <Download size={12} /> Export All
+                         </button>
+                      </div>
+                      <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+                          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase border-b border-gray-100 dark:border-gray-700 flex">
+                              <div className="flex-1">Student</div>
+                              <div className="w-32">Status</div>
+                              <div className="w-32 text-right">Action</div>
+                          </div>
+                          <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-48 overflow-y-auto custom-scrollbar">
+                              {MOCK_STUDENTS.filter(s => `${s.grade}-${s.section}` === viewAssignment.grade).length > 0 ? (
+                                  MOCK_STUDENTS.filter(s => `${s.grade}-${s.section}` === viewAssignment.grade).map((student, index) => {
+                                      // Mock statuses randomly
+                                      const statuses = ['Submitted', 'Pending', 'Late'];
+                                      // Deterministic mock status based on name length
+                                      const status = statuses[student.name.length % 3]; 
+
+                                      return (
+                                          <div key={student.id} className="px-4 py-3 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                              <div className="flex-1 flex items-center gap-3">
+                                                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">
+                                                      {student.name.charAt(0)}
+                                                  </div>
+                                                  <div>
+                                                      <p className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</p>
+                                                      <p className="text-xs text-gray-500">{student.rollNumber}</p>
+                                                  </div>
+                                              </div>
+                                              <div className="w-32">
+                                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                                                      status === 'Submitted' ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30' :
+                                                      status === 'Late' ? 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30' :
+                                                      'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'
+                                                  }`}>
+                                                      {status}
+                                                  </span>
+                                              </div>
+                                              <div className="w-32 text-right">
+                                                  <button className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline disabled:opacity-50 disabled:no-underline" disabled={status === 'Pending'}>
+                                                      View Work
+                                                  </button>
+                                              </div>
+                                          </div>
+                                      );
+                                  })
+                              ) : (
+                                  <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                      No students found in this class.
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+                   </div>
+              </div>
+
+              <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0 flex justify-end">
+                  <button 
+                      onClick={() => setViewAssignment(null)}
+                      className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm"
+                  >
+                      Close
+                  </button>
+              </div>
+           </div>
+         </div>
       )}
     </div>
   );
