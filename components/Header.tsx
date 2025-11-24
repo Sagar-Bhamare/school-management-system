@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Menu, Moon, Sun, LogOut, Settings, User, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useNotifications } from '../context/NotificationContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { MOCK_NOTIFICATIONS } from '../constants';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -12,6 +12,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const navigate = useNavigate();
   
   const [showNotifications, setShowNotifications] = useState(false);
@@ -42,8 +43,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     logout();
     navigate('/login');
   };
-
-  const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
 
   return (
     <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 md:px-6 fixed top-0 right-0 left-0 md:left-64 z-20 transition-all duration-300">
@@ -104,10 +103,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 </Link>
               </div>
               <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                {MOCK_NOTIFICATIONS.slice(0, 5).map((notif) => (
+                {notifications.slice(0, 5).map((notif) => (
                   <div 
                     key={notif.id}
-                    className={`p-4 border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex gap-3 ${!notif.read ? 'bg-brand-50/30 dark:bg-brand-900/10' : ''}`}
+                    onClick={() => markAsRead(notif.id)}
+                    className={`p-4 border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex gap-3 cursor-pointer ${!notif.read ? 'bg-brand-50/30 dark:bg-brand-900/10' : ''}`}
                   >
                     <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!notif.read ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
                     <div className="flex-1">
@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                     </div>
                   </div>
                 ))}
-                {MOCK_NOTIFICATIONS.length === 0 && (
+                {notifications.length === 0 && (
                    <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
                      No notifications
                    </div>

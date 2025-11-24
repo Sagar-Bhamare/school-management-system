@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { Bell, Check, Clock, Info, AlertTriangle, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
-import { MOCK_NOTIFICATIONS } from '../constants';
-import { Notification } from '../types';
+import { useNotifications } from '../context/NotificationContext';
 import toast from 'react-hot-toast';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const handleMarkAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    markAsRead(id);
   };
 
   const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    markAllAsRead();
     toast.success('All notifications marked as read');
   };
 
   const handleDelete = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    deleteNotification(id);
+    toast.success('Notification removed');
   };
 
   const filteredNotifications = filter === 'all' 

@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, FileText, Calendar, CheckCircle, Clock, MoreVertical, Search, Filter, X, Loader2, Edit2, Trash2, Save, AlertCircle, Eye, Paperclip, User, Download } from 'lucide-react';
+import { Plus, FileText, Calendar, CheckCircle, Clock, MoreVertical, Search, Filter, X, Loader2, Edit2, Trash2, Save, AlertCircle, Eye, Paperclip, User, Download, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_ASSIGNMENTS, MOCK_STUDENTS, MOCK_CLASSES } from '../constants';
 import { Assignment } from '../types';
+import { useNotifications } from '../context/NotificationContext';
 import toast from 'react-hot-toast';
 
 const Assignments = () => {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [filter, setFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [submissionFilter, setSubmissionFilter] = useState('All');
+  
+  // Track submitted assignments in current session for demo feedback
+  const [submittedIds, setSubmittedIds] = useState<number[]>([]);
 
   // Identify current student profile if user is a student
   // Fallback to first student if email/name doesn't match (for demo purposes)
@@ -92,6 +98,7 @@ const Assignments = () => {
 
   const openViewModal = (assignment: Assignment) => {
     setViewAssignment(assignment);
+    setSubmissionFilter('All');
     setActiveMenuId(null);
   };
 
@@ -101,6 +108,35 @@ const Assignments = () => {
       toast.success('Assignment deleted');
     }
     setActiveMenuId(null);
+  };
+
+  const handleViewWork = (studentName: string) => {
+    toast.success(`Opening submission for ${studentName}...`);
+  };
+
+  const handleStudentSubmit = () => {
+    if (!viewAssignment) return;
+    
+    // Simulate upload process
+    toast.promise(
+      new Promise(resolve => setTimeout(resolve, 1500)),
+      {
+        loading: 'Uploading assignment...',
+        success: () => {
+          setSubmittedIds(prev => [...prev, viewAssignment.id]);
+          
+          // Notify Teacher (Simulated)
+          addNotification({
+            title: 'Assignment Submitted',
+            message: `${user?.name || 'Student'} submitted ${viewAssignment.title}`,
+            type: 'success'
+          });
+          
+          return 'Assignment submitted successfully!';
+        },
+        error: 'Upload failed'
+      }
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +156,17 @@ const Assignments = () => {
         ...formData,
         submissions: a.submissions // Preserve existing count
       } : a));
+      
+      // Notify Students about update
+      addNotification({
+          title: 'Assignment Updated',
+          message: `Assignment '${formData.title}' for ${formData.grade} has been updated.`,
+          type: 'info'
+      });
+      
       toast.success('Assignment updated successfully');
+      toast('Notifications sent to students', { icon: '📧' });
+      
     } else {
       const newAssignment: Assignment = {
         id: Date.now(),
@@ -128,7 +174,16 @@ const Assignments = () => {
         submissions: 0
       };
       setAssignments(prev => [newAssignment, ...prev]);
+      
+      // Notify Students about new assignment
+      addNotification({
+          title: 'New Assignment',
+          message: `New assignment '${formData.title}' has been posted for ${formData.grade}.`,
+          type: 'info'
+      });
+
       toast.success('Assignment created successfully');
+      toast('Email alerts sent to students', { icon: '📧' });
     }
 
     setIsSubmitting(false);
@@ -200,7 +255,11 @@ const Assignments = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAssignments.length > 0 ? (
           filteredAssignments.map((assign) => (
-              <div key={assign.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all p-6 flex flex-col relative">
+              <div 
+                key={assign.id} 
+                onClick={() => openViewModal(assign)}
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all p-6 flex flex-col relative cursor-pointer group"
+              >
                   <div className="flex justify-between items-start mb-4">
                       <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-blue-600 dark:text-blue-400">
                           <FileText size={24} />
@@ -241,7 +300,7 @@ const Assignments = () => {
                       )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{assign.title}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{assign.title}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{assign.subject} • {assign.grade}</p>
                   
                   <div className="space-y-3 mt-auto">
@@ -250,11 +309,11 @@ const Assignments = () => {
                               <Calendar size={16} /> Due: {assign.dueDate}
                           </span>
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                              assign.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30' : 
+                              assign.status === 'Completed' || submittedIds.includes(assign.id) ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30' : 
                               assign.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30' :
                               'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30'
                           }`}>
-                              {assign.status}
+                              {assign.status === 'Completed' || submittedIds.includes(assign.id) ? 'Submitted' : assign.status}
                           </span>
                       </div>
                       {user?.role === 'teacher' && (
@@ -483,7 +542,7 @@ const Assignments = () => {
                       <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                           <FileText size={18} className="text-gray-400" /> Description
                       </h4>
-                      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                           {viewAssignment.description || "No description provided."}
                       </div>
                   </div>
@@ -521,66 +580,167 @@ const Assignments = () => {
                       </div>
                   </div>
 
-                   {/* Submission List */}
-                   <div>
-                      <div className="flex items-center justify-between mb-2">
-                         <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <User size={18} className="text-gray-400" /> Student Submissions
-                         </h4>
-                         <button className="text-xs text-brand-600 dark:text-brand-400 font-medium flex items-center gap-1">
-                            <Download size={12} /> Export All
-                         </button>
-                      </div>
-                      <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-                          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase border-b border-gray-100 dark:border-gray-700 flex">
-                              <div className="flex-1">Student</div>
-                              <div className="w-32">Status</div>
-                              <div className="w-32 text-right">Action</div>
-                          </div>
-                          <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-48 overflow-y-auto custom-scrollbar">
-                              {MOCK_STUDENTS.filter(s => `${s.grade}-${s.section}` === viewAssignment.grade).length > 0 ? (
-                                  MOCK_STUDENTS.filter(s => `${s.grade}-${s.section}` === viewAssignment.grade).map((student, index) => {
-                                      // Mock statuses randomly
-                                      const statuses = ['Submitted', 'Pending', 'Late'];
-                                      // Deterministic mock status based on name length
-                                      const status = statuses[student.name.length % 3]; 
+                  {/* My Submission - Only for Students */}
+                  {user?.role === 'student' && (
+                     <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                            <CheckCircle size={18} className="text-gray-400" /> My Submission
+                        </h4>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                            {/* Mock Logic: Check active submission session or mock status */}
+                            {viewAssignment.status === 'Completed' || (viewAssignment.id % 2 === 0) || submittedIds.includes(viewAssignment.id) ? (
+                               <div className="flex items-center justify-between">
+                                   <div className="flex items-center gap-3">
+                                       <div className="p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg">
+                                           <CheckCircle size={20} />
+                                       </div>
+                                       <div>
+                                           <p className="font-medium text-gray-900 dark:text-white">Submitted</p>
+                                           <p className="text-xs text-gray-500">Submitted successfully</p>
+                                       </div>
+                                   </div>
+                                   <div className="text-right">
+                                       <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">
+                                          {(viewAssignment.id % 2 === 0) ? `Grade: ${Math.floor(Math.random() * 10) + 20}/${viewAssignment.total}` : 'Pending Grade'}
+                                       </span>
+                                   </div>
+                               </div>
+                            ) : (
+                               <div className="text-center py-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/20">
+                                   <div className="flex flex-col items-center gap-2">
+                                       <div className="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm">
+                                          <Upload size={24} className="text-brand-500" />
+                                       </div>
+                                       <p className="text-sm font-medium text-gray-900 dark:text-white mt-2">Upload your work</p>
+                                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Drag & drop or click to upload</p>
+                                       <button 
+                                          onClick={handleStudentSubmit}
+                                          className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm"
+                                       >
+                                           Select File & Submit
+                                       </button>
+                                   </div>
+                               </div>
+                            )}
+                        </div>
+                     </div>
+                  )}
 
-                                      return (
-                                          <div key={student.id} className="px-4 py-3 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                              <div className="flex-1 flex items-center gap-3">
-                                                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">
-                                                      {student.name.charAt(0)}
-                                                  </div>
-                                                  <div>
-                                                      <p className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</p>
-                                                      <p className="text-xs text-gray-500">{student.rollNumber}</p>
-                                                  </div>
-                                              </div>
-                                              <div className="w-32">
-                                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-                                                      status === 'Submitted' ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30' :
-                                                      status === 'Late' ? 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30' :
-                                                      'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'
-                                                  }`}>
-                                                      {status}
-                                                  </span>
-                                              </div>
-                                              <div className="w-32 text-right">
-                                                  <button className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline disabled:opacity-50 disabled:no-underline" disabled={status === 'Pending'}>
-                                                      View Work
-                                                  </button>
-                                              </div>
-                                          </div>
-                                      );
-                                  })
-                              ) : (
-                                  <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                      No students found in this class.
+                   {/* Submission List - Teacher/Admin Only */}
+                   {user?.role !== 'student' && (
+                     <div className="space-y-4">
+                         <div className="grid grid-cols-3 gap-4">
+                             <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-xl border border-green-100 dark:border-green-900/30 flex flex-col items-center justify-center">
+                                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">{viewAssignment.submissions}</p>
+                                 <p className="text-xs font-medium text-green-600 dark:text-green-500 uppercase tracking-wide">Submitted</p>
+                             </div>
+                             <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-100 dark:border-amber-900/30 flex flex-col items-center justify-center">
+                                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{viewAssignment.total - viewAssignment.submissions}</p>
+                                 <p className="text-xs font-medium text-amber-600 dark:text-amber-500 uppercase tracking-wide">Pending</p>
+                             </div>
+                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30 flex flex-col items-center justify-center">
+                                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{Math.floor(viewAssignment.submissions * 0.8)}</p>
+                                 <p className="text-xs font-medium text-blue-600 dark:text-blue-500 uppercase tracking-wide">Graded</p>
+                             </div>
+                         </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                               <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                  <User size={18} className="text-gray-400" /> Student Submissions
+                               </h4>
+                               <div className="flex items-center gap-2">
+                                  <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+                                      {['All', 'Submitted', 'Pending'].map((f) => (
+                                          <button
+                                              key={f}
+                                              onClick={() => setSubmissionFilter(f)}
+                                              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                                                  submissionFilter === f
+                                                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                              }`}
+                                          >
+                                              {f}
+                                          </button>
+                                      ))}
                                   </div>
-                              )}
-                          </div>
-                      </div>
-                   </div>
+                                   <button className="text-xs text-brand-600 dark:text-brand-400 font-medium flex items-center gap-1 hover:underline ml-2">
+                                      <Download size={12} /> Export
+                                   </button>
+                               </div>
+                            </div>
+                            <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+                                <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase border-b border-gray-100 dark:border-gray-700 flex">
+                                    <div className="flex-1">Student</div>
+                                    <div className="w-32">Status</div>
+                                    <div className="w-32 text-right">Action</div>
+                                </div>
+                                <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-48 overflow-y-auto custom-scrollbar">
+                                    {MOCK_STUDENTS.filter(s => `${s.grade}-${s.section}` === viewAssignment.grade)
+                                        .filter(student => {
+                                            if (submissionFilter === 'All') return true;
+                                            const statuses = ['Submitted', 'Pending', 'Late'];
+                                            const status = statuses[student.name.length % 3]; 
+                                            if (submissionFilter === 'Submitted') return status === 'Submitted' || status === 'Late';
+                                            return status === submissionFilter;
+                                        }).length > 0 ? (
+                                        MOCK_STUDENTS.filter(s => `${s.grade}-${s.section}` === viewAssignment.grade)
+                                        .filter(student => {
+                                            if (submissionFilter === 'All') return true;
+                                            const statuses = ['Submitted', 'Pending', 'Late'];
+                                            const status = statuses[student.name.length % 3]; 
+                                            if (submissionFilter === 'Submitted') return status === 'Submitted' || status === 'Late';
+                                            return status === submissionFilter;
+                                        })
+                                        .map((student, index) => {
+                                            // Mock statuses randomly
+                                            const statuses = ['Submitted', 'Pending', 'Late'];
+                                            // Deterministic mock status based on name length
+                                            const status = statuses[student.name.length % 3]; 
+
+                                            return (
+                                                <div key={student.id} className="px-4 py-3 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                                    <div className="flex-1 flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">
+                                                            {student.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</p>
+                                                            <p className="text-xs text-gray-500">{student.rollNumber}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                                                            status === 'Submitted' ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30' :
+                                                            status === 'Late' ? 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30' :
+                                                            'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'
+                                                        }`}>
+                                                            {status}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-32 text-right">
+                                                        <button 
+                                                            onClick={() => handleViewWork(student.name)}
+                                                            className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline disabled:opacity-50 disabled:no-underline" 
+                                                            disabled={status === 'Pending'}
+                                                        >
+                                                            View Work
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            No students found matching filter.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                         </div>
+                     </div>
+                   )}
               </div>
 
               <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0 flex justify-end">

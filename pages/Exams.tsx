@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, Save, Download, Filter, AlertTriangle, FileBadge, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, Save, Download, Filter, AlertTriangle, FileBadge, TrendingUp, CheckCircle, XCircle, FileSpreadsheet, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { MOCK_STUDENTS, MOCK_SUBJECTS, MOCK_TEACHERS } from '../constants';
 import { useAuth } from '../context/AuthContext';
@@ -134,8 +134,12 @@ const ExamManagement = () => {
     { id: '3', studentName: 'Charlie Brown', subject: 'History', examType: 'Final', teacher: 'Mr. James Moore', score: 92, term: 'Term 1', status: 'Passed' },
     { id: '4', studentName: 'Daisy Miller', subject: 'Chemistry', examType: 'Mid-Term', teacher: 'Ms. Jessica Taylor', score: 78, term: 'Term 1', status: 'Passed' },
     { id: '5', studentName: 'Ethan Hunt', subject: 'Literature', examType: 'Quiz', teacher: 'Mrs. Emily Wilson', score: 88, term: 'Term 1', status: 'Passed' },
+    { id: '6', studentName: 'Fiona Gallagher', subject: 'Mathematics', examType: 'Final', teacher: 'Mr. Robert Anderson', score: 95, term: 'Term 1', status: 'Passed' },
+    { id: '7', studentName: 'Alice Johnson', subject: 'Physics', examType: 'Project', teacher: 'Ms. Sarah Davis', score: 65, term: 'Term 1', status: 'Passed' },
+    { id: '8', studentName: 'Bob Smith', subject: 'Mathematics', examType: 'Mid-Term', teacher: 'Mr. Robert Anderson', score: 55, term: 'Term 1', status: 'Passed' },
   ]);
 
+  // Main UI State
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -143,6 +147,29 @@ const ExamManagement = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentExamId, setCurrentExamId] = useState<string | null>(null);
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
+
+  // Filtering State
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [filters, setFilters] = useState({
+    examType: '',
+    term: '',
+    status: ''
+  });
+
+  // Export State
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close Export menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const initialFormState = {
     studentName: '',
@@ -155,17 +182,73 @@ const ExamManagement = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const filteredExams = exams.filter(exam => 
-    exam.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.examType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Combined Filtering Logic
+  const filteredExams = exams.filter(exam => {
+    const matchesSearch = 
+      exam.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exam.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exam.examType.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = filters.examType ? exam.examType === filters.examType : true;
+    const matchesTerm = filters.term ? exam.term === filters.term : true;
+    const matchesStatus = filters.status ? exam.status === filters.status : true;
+
+    return matchesSearch && matchesType && matchesTerm && matchesStatus;
+  });
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ examType: '', term: '', status: '' });
+  };
+
+  // Export Logic (CSV)
+  const handleExportCSV = () => {
+    if (filteredExams.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    const headers = ['Student Name', 'Subject', 'Exam Type', 'Teacher', 'Term', 'Score', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredExams.map(row => {
+        return [
+          `"${row.studentName}"`,
+          `"${row.subject}"`,
+          `"${row.examType}"`,
+          `"${row.teacher}"`,
+          `"${row.term}"`,
+          row.score,
+          row.status
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `exams_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowExportMenu(false);
+    toast.success('Exported to CSV successfully');
+  };
+
+  // CRUD Handlers
   const resetForm = () => {
     setFormData(initialFormState);
     setIsEditing(false);
@@ -283,6 +366,7 @@ const ExamManagement = () => {
       {/* Toolbar & Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-all">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center gap-4 bg-gray-50/50 dark:bg-gray-900/20">
+          {/* Search */}
           <div className="relative w-full sm:flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
@@ -293,15 +377,104 @@ const ExamManagement = () => {
               className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 dark:bg-gray-700 dark:text-white w-full transition-colors"
             />
           </div>
+          
+          {/* Actions */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-             <button className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+             <button 
+                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm transition-colors ${
+                  showFilterPanel || activeFilterCount > 0
+                  ? 'bg-brand-50 border-brand-200 text-brand-600 dark:bg-brand-900/30 dark:border-brand-800 dark:text-brand-400' 
+                  : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+             >
                 <Filter size={16} /> Filter
+                {activeFilterCount > 0 && <span className="bg-brand-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">{activeFilterCount}</span>}
              </button>
-             <button className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                <Download size={16} /> Export
-             </button>
+             
+             <div className="relative" ref={exportMenuRef}>
+               <button 
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+               >
+                  <Download size={16} /> Export
+                  <ChevronDown size={14} />
+               </button>
+               {showExportMenu && (
+                 <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-20 animate-in fade-in zoom-in-95 duration-200">
+                    <button 
+                      onClick={handleExportCSV}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <FileSpreadsheet size={16} className="text-green-600" /> Export to CSV (Excel)
+                    </button>
+                    <button 
+                      onClick={() => { window.print(); setShowExportMenu(false); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                       <Download size={16} /> Print View
+                    </button>
+                 </div>
+               )}
+             </div>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        {showFilterPanel && (
+          <div className="p-4 bg-gray-50 border-b border-gray-200 dark:bg-gray-900/40 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
+             <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Exam Type</label>
+                <select 
+                  name="examType" 
+                  value={filters.examType} 
+                  onChange={handleFilterChange}
+                  className="w-full text-sm border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2 focus:ring-2 focus:ring-brand-200 outline-none"
+                >
+                  <option value="">All Types</option>
+                  <option value="Quiz">Quiz</option>
+                  <option value="Mid-Term">Mid-Term</option>
+                  <option value="Final">Final</option>
+                  <option value="Project">Project</option>
+                </select>
+             </div>
+             <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Term</label>
+                <select 
+                  name="term" 
+                  value={filters.term} 
+                  onChange={handleFilterChange}
+                  className="w-full text-sm border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2 focus:ring-2 focus:ring-brand-200 outline-none"
+                >
+                  <option value="">All Terms</option>
+                  <option value="Term 1">Term 1</option>
+                  <option value="Term 2">Term 2</option>
+                  <option value="Term 3">Term 3</option>
+                </select>
+             </div>
+             <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Status</label>
+                <select 
+                  name="status" 
+                  value={filters.status} 
+                  onChange={handleFilterChange}
+                  className="w-full text-sm border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2 focus:ring-2 focus:ring-brand-200 outline-none"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="Passed">Passed</option>
+                  <option value="Failed">Failed</option>
+                </select>
+             </div>
+             <div className="flex items-end">
+                <button 
+                  onClick={clearFilters}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors w-full"
+                >
+                   Clear Filters
+                </button>
+             </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -372,7 +545,7 @@ const ExamManagement = () => {
               {filteredExams.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                    No exam records found.
+                    No exam records found matching your filters.
                   </td>
                 </tr>
               )}
